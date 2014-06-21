@@ -5,3 +5,7 @@
 #
 # Note: The `lib` directory is added to `sys.path` by `appengine_config.py`.
 Flask==0.10
+Werkzeug>=0.7
+#Jinja2>=2.4
+itsdangerous>=0.21
+#markupsafe
