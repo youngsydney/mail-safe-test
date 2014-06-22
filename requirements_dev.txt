@@ -1,0 +1,6 @@
+# Dependencies for local development
+unittest2
+
+# Dependencies provided by AppEngine
+Jinja2>=2.4
+markupsafe
