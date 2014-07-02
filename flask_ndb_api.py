@@ -58,8 +58,8 @@ class NDBJSONEncoder(JSONEncoder):
 
     elif hasattr(obj, 'to_dict'):
       return getattr(obj, 'to_dict')(
-        includes=self.__includes,
-        excludes=self.__excludes)
+        include=self.__includes,
+        exclude=self.__excludes)
 
     elif isinstance(obj, datetime):
       return to_epoch(obj)

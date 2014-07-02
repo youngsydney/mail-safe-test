@@ -9,7 +9,7 @@ Flask==0.10
 Werkzeug>=0.7
 itsdangerous>=0.21
 
-flask-restful
+git+https://github.com/twilio/flask-restful.git#egg=flask-restful
 six
 aniso8601
 pytz

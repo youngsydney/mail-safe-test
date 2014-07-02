@@ -19,7 +19,7 @@ class Config(object):
     CACHE_TYPE = 'gaememcached'
 
 class Development(Config):
-    DEBUG = False
+    DEBUG = True
     # Flask-DebugToolbar settings
     CSRF_ENABLED = True
 
