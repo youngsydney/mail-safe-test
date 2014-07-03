@@ -34,6 +34,7 @@ user_fields = {
     'created': fields.DateTime,
     'last_active': fields.DateTime,
     'uri': NDBUrl('/admin/user/'),
+#    'uri': NDBUrl('/user/'),
 }
 
 parser = reqparse.RequestParser()
@@ -53,13 +54,15 @@ class UserModel(ndb.Model):
     last_active = ndb.DateTimeProperty(auto_now_add=True)
 
 def get_user(request):
-    # TODO(gdb): Verify authorization header
+    # TODO(gdb): Verify authorization header loop up user.
     user_id = request.headers.get('Authorization')
     if user_id is None:
         abort(400)
-    user_key = ndb.Key(UserModel, user_id)
-    user_obj = user_key.get()
-    return user_obj
+    key_id = int(user_id)
+    print "key_id", key_id
+    user= ndb.Key(UserModel, key_id).get()
+    print "user", user
+    return user
 
 class AdminUserAPI(restful.Resource):
     '''GET, PUT, DELETE on _other_ users'''
@@ -92,48 +95,53 @@ class AdminUserListAPI(restful.Resource):
 
     @marshal_with(user_list_fields)
     def get(self):
-        user_objs = UserModel.query().fetch()
-        return {'users': user_objs}
+        users = UserModel.query().fetch()
+        return {'users': users}
 
     @marshal_with(user_list_fields)
     def delete(self):
         ndb.delete_multi(UserModel.query().fetch(keys_only=True))
-        user_objs = UserModel.query().fetch()
-        return {'users': user_objs}
-
-
-class UserListAPI(restful.Resource):
-    def __init__(self):
-        self.parser = parser.copy()
-        self.parser.replace_argument('email', type = str, required = True, location = 'json')
-        super(UserListAPI, self).__init__()
-
-    @marshal_with(user_fields)
-    def post(self):
-        # create a new user
-        print request.get_json()
-        args = self.parser.parse_args()
-        user_obj = UserModel(**args)
-        user_obj.put()
-        return user_obj
+        users = UserModel.query().fetch()
+        return {'users': users}
 
 class UserAPI(restful.Resource):
     def __init__(self):
-        self.parser = parser.copy()
+        self.post_parser = parser.copy()
+        self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
+        self.put_parser = parser.copy()
         super(UserAPI, self).__init__()
 
     @marshal_with(user_fields)
     def get(self):
-        user_obj = get_user(request)
-        if user_obj is None:
+        user = get_user(request)
+        if user is None:
             abort(404)
-        return user_obj
+        return user
+
+    @marshal_with(user_fields)
+    def post(self):
+        user = get_user(request)
+        if user is not None:
+            abort(405)
+        args = self.post_parser.parse_args()
+        user = UserModel(**args)
+        user.put()
+        return user
 
     @marshal_with(user_fields)
     def put(self):
-        # update a single user
-        abort(501)
+        user = get_user(request)
+        if not user:
+            abort(404)
+        args = self.put_parser.parse_args()
+        user.populate(**args)
+        user.put()
+        return user
 
     def delete(self):
+        user = get_user(request)
         # delete a single user
-        abort(501)
+        if not user:
+            abort(404)
+        user.key.delete()
+        return make_response("", 204)
