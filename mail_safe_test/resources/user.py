@@ -32,7 +32,7 @@ user_fields = {
     'created': fields.DateTime,
     'last_active': fields.DateTime,
     'uri': NDBUrl('/admin/user/'),
-#    'uri': NDBUrl('/user/'),
+#   'uri': NDBUrl('/users/'),
 }
 
 parser = reqparse.RequestParser()
@@ -123,7 +123,7 @@ class UserAPI(restful.Resource):
     @marshal_with(user_fields)
     def get(self):
         user = get_user(request)
-        if user is None:
+        if user is None:  
             abort(404)
         return user
 
