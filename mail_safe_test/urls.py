@@ -15,15 +15,14 @@ from mail_safe_test.errors import HTTP_Error
 from flask.ext import restful
 
 app.api = restful.Api(app)
-api = app.api
 
-api.add_resource(AdminUserAPI, '/admin/user/<int:key_id>', endpoint = '/admin/user/')
-api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users/')
+app.api.add_resource(AdminUserAPI, '/admin/user/<int:key_id>/', endpoint = '/admin/user/')
+app.api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users/')
 
 # Resources for the currently logged in user
-api.add_resource(UserAPI, '/user/', endpoint = '/user/')
-#api.add_resource(Contact,  '/user/contact/<int:contact_id>/',endpoint =  '/contact/')
-api.add_resource(Doc,       '/user/doc/<int:doc_id>', endpoint = '/doc/')
+app.api.add_resource(UserAPI, '/user/', endpoint = '/user/')
+#app.api.add_resource(Contact,  '/user/contact/<int:contact_id>/',endpoint =  '/contact/')
+app.api.add_resource(Doc,       '/user/doc/<int:doc_id>/', endpoint = '/doc/')
 
 # Login not required
-#api.add_resource(Link,     '/link/<int:link_id>')
+#app.api.add_resource(Link,     '/link/<int:link_id>/')

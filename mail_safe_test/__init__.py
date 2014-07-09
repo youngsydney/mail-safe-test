@@ -1,6 +1,4 @@
-from authomatic import Authomatic
 from flask import Flask
-from mail_safe_test.oauth_keys import CONFIG
 import os
 
 app = Flask('mail_safe_test')
@@ -16,7 +14,6 @@ elif is_development():
 else:
     app.config.from_object('mail_safe_test.settings.Production')
 
-app.authomatic = Authomatic(config=CONFIG, secret=app.config.get('CSRF_SESSION_KEY'))
 
 # Pull in URL dispatch routes
 import urls

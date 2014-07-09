@@ -1,5 +1,5 @@
 import flask
-from flask import request, Response, abort, make_response
+from flask import request, Response, abort, make_response, url_for
 from flask.ext import restful
 from flask.ext.restful import fields, marshal, marshal_with, reqparse
 import flask_restful
@@ -16,7 +16,7 @@ class NDBUrl(fields.Url):
             data = obj.to_dict()
             data['key'] = obj.key.urlsafe()
             data['key_id'] = obj.key.id()
-            o = urlparse(flask.url_for(self.endpoint, _external=self.absolute, **data))
+            o = urlparse(url_for(self.endpoint, _external=self.absolute, **data))
             if self.absolute:
                 scheme = self.scheme if self.scheme is not None else o.scheme
                 return urlunparse((scheme, o.netloc, o.path, "", "", ""))
