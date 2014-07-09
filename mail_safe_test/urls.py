@@ -4,15 +4,12 @@ urls.py
 URL dispatch route mappings
 
 """
+from flask.ext import restful
 from mail_safe_test import app
-from mail_safe_test import resources
 from mail_safe_test.resources.user import UserAPI, AdminUserAPI, AdminUserListAPI
 from mail_safe_test.resources.contact import ContactList, Contact
 from mail_safe_test.resources.doc import DocList, Doc
 from mail_safe_test.resources.link import Link
-from mail_safe_test.errors import HTTP_Error
-
-from flask.ext import restful
 
 app.api = restful.Api(app)
 

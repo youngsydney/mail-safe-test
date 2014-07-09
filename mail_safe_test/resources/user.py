@@ -1,28 +1,8 @@
-import flask
 from flask import request, Response, abort, make_response, url_for
-from flask.ext import restful
-from flask.ext.restful import fields, marshal, marshal_with, reqparse
-import flask_restful
-from flask_ndb_api import NDBJSONEncoder, ndbdumps, entity_to_dict
+from flask.ext.restful import Resource, fields, marshal, marshal_with, reqparse
 from google.appengine.ext import ndb
-import json
-from urlparse import urlparse, urlunparse
-from mail_safe_test.errors import HTTP_Error
-from mail_safe_test import app
-
-class NDBUrl(fields.Url):
-    def output(self, key, obj):
-        try:
-            data = obj.to_dict()
-            data['key'] = obj.key.urlsafe()
-            data['key_id'] = obj.key.id()
-            o = urlparse(url_for(self.endpoint, _external=self.absolute, **data))
-            if self.absolute:
-                scheme = self.scheme if self.scheme is not None else o.scheme
-                return urlunparse((scheme, o.netloc, o.path, "", "", ""))
-            return urlunparse(("", "", o.path, "", "", ""))
-        except TypeError as te:
-            raise MarshallingException(te)
+from mail_safe_test.custom_fields import NDBUrl
+from mail_safe_test.auth import user_required, admin_required
 
 # Public exports
 user_fields = {
@@ -31,9 +11,11 @@ user_fields = {
     'email': fields.String,
     'created': fields.DateTime,
     'last_active': fields.DateTime,
-    'uri': NDBUrl('/admin/user/'),
-#    'uri': NDBUrl('/user/'),
+    'uri': NDBUrl('/user/'),
 }
+
+admin_user_fields = user_fields
+admin_user_fields['uri'] = NDBUrl('/admin/user/'),
 
 parser = reqparse.RequestParser()
 parser.add_argument('first_name', type = str, location = 'json')
@@ -51,37 +33,18 @@ class UserModel(ndb.Model):
     created = ndb.DateTimeProperty(auto_now_add=True)
     last_active = ndb.DateTimeProperty(auto_now_add=True)
 
-def get_user(request):
-    # TODO(gdb): Verify authorization header loop up user.
-    user_id = request.headers.get('Authorization')
-    if not user_id or not user_id.isdigit():
-        abort(400)
-    key_id = int(user_id)
-    return ndb.Key(UserModel, key_id).get()
-
-from functools import wraps
-def admin_required(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        auth_user = get_user(request)
-        print "authuser", auth_user
-        if not auth_user or not auth_user.admin:
-            abort(403)
-        return func(*args, **kwargs)
-    return wrapper
-
-class AdminUserAPI(restful.Resource):
+class AdminUserAPI(Resource):
     '''GET, PUT, DELETE on _other_ users'''
     method_decorators = [admin_required]
 
-    @marshal_with(user_fields)
+    @marshal_with(admin_user_fields)
     def get(self, key_id):
         user = ndb.Key(UserModel, key_id).get()
         if not user:
             abort(404)
         return user
 
-    @marshal_with(user_fields)
+    @marshal_with(admin_user_fields)
     def put(self, key_id):
         user = ndb.Key(UserModel, key_id).get()
         if not user:
@@ -98,9 +61,9 @@ class AdminUserAPI(restful.Resource):
         key.delete()
         return make_response("", 204)
 
-class AdminUserListAPI(restful.Resource):
+class AdminUserListAPI(Resource):
     method_decorators = [admin_required]
-    user_list_fields = {'users': fields.List(fields.Nested(user_fields))}
+    user_list_fields = {'users': fields.List(fields.Nested(admin_user_fields))}
 
     @marshal_with(user_list_fields)
     def get(self):
@@ -113,7 +76,8 @@ class AdminUserListAPI(restful.Resource):
         users = UserModel.query().fetch()
         return {'users': users}
 
-class UserAPI(restful.Resource):
+class UserAPI(Resource):
+    method_decorators = [user_required]
     def __init__(self):
         self.post_parser = parser.copy()
         self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
