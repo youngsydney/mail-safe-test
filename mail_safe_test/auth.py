@@ -1,9 +1,14 @@
-#auth.py
-# Common code for retreiving and validating the user from the
-# Authorization header.
+"""
+auth.py
 
+Common code for retreiving and validating the user from the
+Authorization header.
+"""
+
+from flask import request, abort
 from functools import wraps
 from google.appengine.ext import ndb
+from mail_safe_test.resources.user import UserModel
 
 def get_user(request):
     # TODO(gdb): Verify authorization header loop up user.

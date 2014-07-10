@@ -1,4 +1,5 @@
 #custom_fields.py
+from flask.ext.restful import fields
 
 class NDBUrl(fields.Url):
     '''Extends fields.Url with the key and key_id of an NDB object.
