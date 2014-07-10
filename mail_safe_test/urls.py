@@ -17,7 +17,7 @@ from flask.ext import restful
 app.api = restful.Api(app)
 api = app.api
 
-api.add_resource(AdminUserAPI, '/admin/user/<int:key_id>', endpoint = '/admin/user/')
+api.add_resource(AdminUserAPI, '/admin/user/<int:key_id>/', endpoint = '/admin/user/')
 api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users/')
 
 # Resources for the currently logged in user
