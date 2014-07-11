@@ -1,5 +1,7 @@
 #custom_fields.py
+from flask import url_for
 from flask.ext.restful import fields
+from urlparse import urlparse, urlunparse
 
 class NDBUrl(fields.Url):
     '''Extends fields.Url with the key and key_id of an NDB object.

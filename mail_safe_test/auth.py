@@ -8,10 +8,19 @@ Authorization header.
 from flask import request, abort
 from functools import wraps
 from google.appengine.ext import ndb
-from mail_safe_test.resources.user import UserModel
 
-def get_user(request):
-    # TODO(gdb): Verify authorization header loop up user.
+class UserModel(ndb.Model):
+    first_name = ndb.StringProperty()
+    last_name = ndb.StringProperty()
+    email = ndb.StringProperty()
+    oauth = ndb.StringProperty()
+    admin = ndb.BooleanProperty(default=False)
+    created = ndb.DateTimeProperty(auto_now_add=True)
+    last_active = ndb.DateTimeProperty(auto_now_add=True)
+
+def current_user(request):
+    '''Returns None if the user is not found.'''
+    # TODO(gdb): Verify authorization header with oauth.
     user_id = request.headers.get('Authorization')
     if not user_id or not user_id.isdigit():
         abort(400)
@@ -21,21 +30,18 @@ def get_user(request):
 def user_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        auth_user = get_user(request)
-        print "authuser", auth_user
+        auth_user = current_user(request)
         if not auth_user:
             abort(403)
-        kwargs['auth_user'] = auth_user
         return func(*args, **kwargs)
     return wrapper
 
 def admin_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        auth_user = get_user(request)
+        auth_user = current_user(request)
         if not auth_user or not auth_user.admin:
             abort(403)
-        kwargs['auth_user'] = auth_user
         return func(*args, **kwargs)
     return wrapper
 

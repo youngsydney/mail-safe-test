@@ -1,8 +1,8 @@
-from flask import request, Response, abort, make_response, url_for
-from flask.ext.restful import Resource, fields, marshal, marshal_with, reqparse
+from flask import request, Response, abort, make_response
+from flask.ext.restful import Resource, fields, marshal_with, reqparse
 from google.appengine.ext import ndb
 from mail_safe_test.custom_fields import NDBUrl
-from mail_safe_test.auth import user_required, admin_required
+from mail_safe_test.auth import current_user, user_required, admin_required, UserModel
 
 # Public exports
 user_fields = {
@@ -14,7 +14,7 @@ user_fields = {
     'uri': NDBUrl('/user/'),
 }
 
-admin_user_fields = user_fields
+admin_user_fields = user_fields.copy()
 admin_user_fields['uri'] = NDBUrl('/admin/user/'),
 
 parser = reqparse.RequestParser()
@@ -23,15 +23,6 @@ parser.add_argument('last_name', type = str, location = 'json')
 parser.add_argument('email', type = str, location = 'json')
 parser.add_argument('Authorization', type=str, required=True, location='headers',
                             dest='oauth')
-
-class UserModel(ndb.Model):
-    first_name = ndb.StringProperty()
-    last_name = ndb.StringProperty()
-    email = ndb.StringProperty()
-    oauth = ndb.StringProperty()
-    admin = ndb.BooleanProperty(default=False)
-    created = ndb.DateTimeProperty(auto_now_add=True)
-    last_active = ndb.DateTimeProperty(auto_now_add=True)
 
 class AdminUserAPI(Resource):
     '''GET, PUT, DELETE on _other_ users'''
@@ -77,7 +68,6 @@ class AdminUserListAPI(Resource):
         return {'users': users}
 
 class UserAPI(Resource):
-    method_decorators = [user_required]
     def __init__(self):
         self.post_parser = parser.copy()
         self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
@@ -85,36 +75,32 @@ class UserAPI(Resource):
         super(UserAPI, self).__init__()
 
     @marshal_with(user_fields)
+    @user_required
     def get(self):
-        user = get_user(request)
-        if user is None:
-            abort(404)
+        user = current_user(request)
         return user
 
     @marshal_with(user_fields)
     def post(self):
-        user = get_user(request)
-        if user is not None:
-            abort(403)
+        user = current_user(request)
+        if user:
+            abort(403)  # Don't create duplicate users.
         args = self.post_parser.parse_args()
         user = UserModel(**args)
         user.put()
         return user
 
     @marshal_with(user_fields)
+    @user_required
     def put(self):
-        user = get_user(request)
-        if not user:
-            abort(404)
+        user = current_user(request)
         args = self.put_parser.parse_args()
         user.populate(**args)
         user.put()
         return user
 
+    @user_required
     def delete(self):
-        user = get_user(request)
-        # delete a single user
-        if not user:
-            abort(404)
-        user.key.delete()
+        user = current_user(request)
+        user.key.delete()  # Delete a single user.
         return make_response("", 204)

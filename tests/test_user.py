@@ -88,6 +88,18 @@ class UserAuthUserTestCases(TestCase):
                 headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(200, rv.status_code)
 
+    def test_user_put(self):
+        rv = self.app.put('/user/',
+            data='{"first_name": "Changed"}',
+            content_type='application/json',
+                headers = {'Authorization': UserAuthUserTestCases.user_id})
+        self.assertEqual(200, rv.status_code)
+
+    def test_user_delete(self):
+        rv = self.app.delete('/user/',
+                headers = {'Authorization': UserAuthUserTestCases.user_id})
+        self.assertEqual(204, rv.status_code)
+
     # TODO (hpshelton 7/9/14): This seems like a bug; /user/ and /user/id/ should probably be equivalent with appropriate auth
     def test_user_id_endpoint(self):
         rv = self.app.get('/user/' + UserAuthUserTestCases.user_id + '/',
