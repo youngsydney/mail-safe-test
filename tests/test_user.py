@@ -4,6 +4,7 @@
 tests.py
 
 """
+
 from json import loads
 from google.appengine.ext import testbed
 from mail_safe_test import app

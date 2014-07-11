@@ -7,14 +7,15 @@ Important: Place your keys in the secret_keys.py module,
            which should be kept out of version control.
 
 """
-import os
 
-from secret_keys import CSRF_SECRET_KEY, SESSION_KEY
+from secret_keys import *
 
 class Config(object):
     # Set secret keys for CSRF protection
     SECRET_KEY = CSRF_SECRET_KEY
     CSRF_SESSION_KEY = SESSION_KEY
+    GOOGLE_ID = GOOGLE_ID
+    GOOGLE_SECRET = GOOGLE_SECRET
     # Flask-Cache settings
     CACHE_TYPE = 'gaememcached'
 
