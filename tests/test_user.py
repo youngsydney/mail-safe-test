@@ -25,6 +25,7 @@ class NonAuthUserTestCases(TestCase):
 
     def setUp(self):
         common_setUp(self)
+        self.data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}'
 
     def tearDown(self):
         self.testbed.deactivate()
@@ -38,30 +39,36 @@ class NonAuthUserTestCases(TestCase):
         self.assertEqual(404, rv.status_code)
 
     def test_create_valid_user(self):
-        response = self.app.post('/user/',
-            data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}',
-            content_type='application/json',
-            headers = {'Authorization': '1'})
-        self.assertEqual(200, response.status_code)
+        rv = self.app.post('/user/',
+                data=self.data,
+                content_type='application/json',
+                headers = {'Authorization': '1'})
+        self.assertEqual(200, rv.status_code)
 
-        data = loads(response.data)
+        data = loads(rv.data)
         self.assertEqual('Testy', data['first_name'])
         self.assertEqual('McTest', data['last_name'])
         self.assertEqual('test@example.com', data['email'])
         #TODO (hpshelton 7/9/14): Verify the created date/time and the uri
 
     def test_create_invalid_user(self):
-        response = self.app.post('/user/',
+        rv = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest"}',
             content_type='application/json',
             headers = {'Authorization': '1'})
-        self.assertEqual(400, response.status_code)
+        self.assertEqual(400, rv.status_code)
 
-        data = loads(response.data)
+        data = loads(rv.data)
         # Maybe check non-null or non-empty here?
         self.assertEqual('Missing required parameter email in json',
                          data['message'])
 
+    def test_put_invalid_user(self):
+        rv = self.app.post('/user/',
+            data='{"first_name": "Testy", "last_name": "McTest"}',
+            content_type='application/json',
+            headers = {'Authorization': '100'})
+        self.assertEqual(400, rv.status_code)
 
 class UserAuthUserTestCases(TestCase):
 
@@ -70,11 +77,11 @@ class UserAuthUserTestCases(TestCase):
 
         # Provision a valid user
         UserAuthUserTestCases.user_id = '1'
-        response = self.app.post('/user/',
+        rv = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}',
             content_type='application/json',
             headers = {'Authorization': UserAuthUserTestCases.user_id})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(200, rv.status_code)
 
     def tearDown(self):
         self.testbed.deactivate()
@@ -96,34 +103,33 @@ class UserAuthUserTestCases(TestCase):
             headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(204, rv.status_code)
 
-    # TODO (hpshelton 7/9/14): This seems like a bug; /user/ and /user/id/ should probably be equivalent with appropriate auth
-    def test_user_id_endpoint(self):
-        rv = self.app.get('/user/' + UserAuthUserTestCases.user_id + '/',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
-        self.assertEqual(404, rv.status_code)
-
-# TODO (hpshelton 7/9/14): This probably can't be tested until I can programmatically generate admin users (or we build a default admin id test hook)
 class AdminAuthUserTestCases(TestCase):
 
     def setUp(self):
         common_setUp(self)
 
         # Provision a valid admin user
-        # TODO
+        AdminAuthUserTestCases.admin_id = "0" #Ids are strings
 
-        # Store the generated admin user id in a static variable
-        AdminAuthUserTestCases.admin_id = 1
+        from mail_safe_test.auth import UserModel
+        from google.appengine.ext import ndb
+        args = {"id": AdminAuthUserTestCases.admin_id,
+                "first_name": "Admin",
+                "last_name": "McAdmin",
+                "email": "admin@example.com",
+                "admin": True}
+        user = UserModel(**args)
+        user.put()
+
     def tearDown(self):
         self.testbed.deactivate()
 
-'''
     def test_users_endpoint(self):
         rv = self.app.get('/admin/users/',
             headers = {'Authorization': AdminAuthUserTestCases.admin_id})
         self.assertEqual(200, rv.status_code)
 
-        data = loads(response.data)
+        data = loads(rv.data)
         self.assertEqual('Admin', data['users'][0]['first_name'])
         self.assertEqual('McAdmin', data['users'][0]['last_name'])
         self.assertEqual('admin@example.com', data['users'][0]['email'])
-'''
