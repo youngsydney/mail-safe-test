@@ -5,8 +5,8 @@ from urlparse import urlparse, urlunparse
 
 class NDBUrl(fields.Url):
     '''Extends fields.Url with the key and key_id of an NDB object.
-    This allows auto-discovery and generation of paths to get/post/put/delete functions
-    that accept key or key_id as arguments'''
+    This allows auto-discovery and generation of paths to get/post/put/delete
+    functions that accept key or key_id as arguments'''
     def output(self, key, obj):
         try:
             data = obj.to_dict()

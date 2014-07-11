@@ -13,19 +13,19 @@ class UserModel(ndb.Model):
     first_name = ndb.StringProperty()
     last_name = ndb.StringProperty()
     email = ndb.StringProperty()
-    oauth = ndb.StringProperty()
     admin = ndb.BooleanProperty(default=False)
     created = ndb.DateTimeProperty(auto_now_add=True)
     last_active = ndb.DateTimeProperty(auto_now_add=True)
 
 def current_user(request):
     '''Returns None if the user is not found.'''
-    # TODO(gdb): Verify authorization header with oauth.
-    user_id = request.headers.get('Authorization')
-    if not user_id or not user_id.isdigit():
+    id_token = request.headers.get('Authorization')
+    if not id_token:
         abort(400)
-    key_id = int(user_id)
-    return ndb.Key(UserModel, key_id).get()
+    # TODO(gdbelvin): Verify id token.
+    # TODO(gdbelvin): Extract `sub`, the unique_key.
+    sub = id_token
+    return ndb.Key(UserModel, sub).get()
 
 def user_required(func):
     @wraps(func)

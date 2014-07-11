@@ -1,7 +1,7 @@
 """
 urls.py
 
-URL dispatch route mappings
+URL dispatch, route mappings
 
 """
 from flask.ext import restful
@@ -13,7 +13,7 @@ from mail_safe_test.resources.link import Link
 
 app.api = restful.Api(app)
 
-app.api.add_resource(AdminUserAPI, '/admin/user/<int:key_id>/', endpoint = '/admin/user/')
+app.api.add_resource(AdminUserAPI, '/admin/user/<string:key_id>/', endpoint = '/admin/user/')
 app.api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users/')
 
 # Resources for the currently logged in user

@@ -1,3 +1,8 @@
+"""
+user.py
+
+"""
+
 from flask import request, Response, abort, make_response
 from flask.ext.restful import Resource, fields, marshal_with, reqparse
 from google.appengine.ext import ndb
@@ -15,14 +20,12 @@ user_fields = {
 }
 
 admin_user_fields = user_fields.copy()
-admin_user_fields['uri'] = NDBUrl('/admin/user/'),
+admin_user_fields['uri'] = NDBUrl('/admin/user/')
 
 parser = reqparse.RequestParser()
 parser.add_argument('first_name', type = str, location = 'json')
 parser.add_argument('last_name', type = str, location = 'json')
 parser.add_argument('email', type = str, location = 'json')
-parser.add_argument('Authorization', type=str, required=True, location='headers',
-                            dest='oauth')
 
 class AdminUserAPI(Resource):
     '''GET, PUT, DELETE on _other_ users'''
@@ -69,9 +72,10 @@ class AdminUserListAPI(Resource):
 
 class UserAPI(Resource):
     def __init__(self):
+        self.put_parser  = parser.copy()
         self.post_parser = parser.copy()
-        self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
-        self.put_parser = parser.copy()
+        self.post_parser.replace_argument('email', type = str, required = True,
+                location = 'json')
         super(UserAPI, self).__init__()
 
     @marshal_with(user_fields)
@@ -82,11 +86,13 @@ class UserAPI(Resource):
 
     @marshal_with(user_fields)
     def post(self):
-        user = current_user(request)
-        if user:
-            abort(403)  # Don't create duplicate users.
+        if current_user(request):
+            abort(409)  # Don't create duplicate users.
+        sub = request.headers.get('Authorization')
+        if not sub:
+            abort(400)
         args = self.post_parser.parse_args()
-        user = UserModel(**args)
+        user = UserModel(id=sub, **args)
         user.put()
         return user
 

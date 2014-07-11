@@ -69,41 +69,37 @@ class UserAuthUserTestCases(TestCase):
         common_setUp(self)
 
         # Provision a valid user
+        UserAuthUserTestCases.user_id = '1'
         response = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}',
             content_type='application/json',
-            headers = {'Authorization': '1'})
+            headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(200, response.status_code)
-
-        # Store the generated user id in a static variable
-        # TODO (hpshelton 7/9/14) Is this always equal to 1?
-        data = loads(response.data)
-        UserAuthUserTestCases.user_id = data['uri'].split('/')[-2]
 
     def tearDown(self):
         self.testbed.deactivate()
 
     def test_user_endpoint(self):
         rv = self.app.get('/user/',
-                headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(200, rv.status_code)
 
     def test_user_put(self):
         rv = self.app.put('/user/',
             data='{"first_name": "Changed"}',
             content_type='application/json',
-                headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(200, rv.status_code)
 
     def test_user_delete(self):
         rv = self.app.delete('/user/',
-                headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(204, rv.status_code)
 
     # TODO (hpshelton 7/9/14): This seems like a bug; /user/ and /user/id/ should probably be equivalent with appropriate auth
     def test_user_id_endpoint(self):
         rv = self.app.get('/user/' + UserAuthUserTestCases.user_id + '/',
-                headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(404, rv.status_code)
 
 # TODO (hpshelton 7/9/14): This probably can't be tested until I can programmatically generate admin users (or we build a default admin id test hook)
