@@ -26,16 +26,16 @@ class NonAuthUserTestCases(TestCase):
 
     def setUp(self):
         common_setUp(self)
-        self.data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}'
+        self.data='{"first_name": "Testy", "last_name": "McTest"}'
 
     def tearDown(self):
         self.testbed.deactivate()
 
     def test_user_endpoint(self):
         rv = self.app.get('/user/')
-        self.assertEqual(400, rv.status_code)
+        self.assertEqual(403, rv.status_code)
 
-    def test_user_id_endpoint(self):
+    def test_id_token_endpoint(self):
         rv = self.app.get('/user/1/')
         self.assertEqual(404, rv.status_code)
 
@@ -43,32 +43,27 @@ class NonAuthUserTestCases(TestCase):
         rv = self.app.post('/user/',
                 data=self.data,
                 content_type='application/json',
-                headers = {'Authorization': '1'})
+                headers = {'Authorization': 'valid'})
         self.assertEqual(200, rv.status_code)
 
         data = loads(rv.data)
         self.assertEqual('Testy', data['first_name'])
         self.assertEqual('McTest', data['last_name'])
-        self.assertEqual('test@example.com', data['email'])
+        self.assertEqual('test@test.com', data['email'])
         #TODO (hpshelton 7/9/14): Verify the created date/time and the uri
 
     def test_create_invalid_user(self):
         rv = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest"}',
             content_type='application/json',
-            headers = {'Authorization': '1'})
+            headers = {'Authorization': 'invalid'})
         self.assertEqual(400, rv.status_code)
-
-        data = loads(rv.data)
-        # Maybe check non-null or non-empty here?
-        self.assertEqual('Missing required parameter email in json',
-                         data['message'])
 
     def test_put_invalid_user(self):
         rv = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest"}',
             content_type='application/json',
-            headers = {'Authorization': '100'})
+            headers = {'Authorization': 'invalid'})
         self.assertEqual(400, rv.status_code)
 
 class UserAuthUserTestCases(TestCase):
@@ -77,11 +72,11 @@ class UserAuthUserTestCases(TestCase):
         common_setUp(self)
 
         # Provision a valid user
-        UserAuthUserTestCases.user_id = '1'
+        UserAuthUserTestCases.id_token = 'valid'
         rv = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}',
             content_type='application/json',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.id_token})
         self.assertEqual(200, rv.status_code)
 
     def tearDown(self):
@@ -89,19 +84,19 @@ class UserAuthUserTestCases(TestCase):
 
     def test_user_endpoint(self):
         rv = self.app.get('/user/',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.id_token})
         self.assertEqual(200, rv.status_code)
 
     def test_user_put(self):
         rv = self.app.put('/user/',
             data='{"first_name": "Changed"}',
             content_type='application/json',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.id_token})
         self.assertEqual(200, rv.status_code)
 
     def test_user_delete(self):
         rv = self.app.delete('/user/',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.id_token})
         self.assertEqual(204, rv.status_code)
 
 class AdminAuthUserTestCases(TestCase):
@@ -110,7 +105,8 @@ class AdminAuthUserTestCases(TestCase):
         common_setUp(self)
 
         # Provision a valid admin user
-        AdminAuthUserTestCases.admin_id = "0" #Ids are strings
+        AdminAuthUserTestCases.admin_id = "111111111111111111111"
+        AdminAuthUserTestCases.admin_token = "valid"
 
         from mail_safe_test.auth import UserModel
         from google.appengine.ext import ndb
@@ -127,7 +123,7 @@ class AdminAuthUserTestCases(TestCase):
 
     def test_users_endpoint(self):
         rv = self.app.get('/admin/users/',
-            headers = {'Authorization': AdminAuthUserTestCases.admin_id})
+            headers = {'Authorization': AdminAuthUserTestCases.admin_token})
         self.assertEqual(200, rv.status_code)
 
         data = loads(rv.data)
