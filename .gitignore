@@ -8,7 +8,7 @@
 *.pydevproject
 *.kpf
 venv
-tag
+tags
 
 # Don't store secret keys in version control
 secret_keys.py

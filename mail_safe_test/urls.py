@@ -1,31 +1,30 @@
 """
 urls.py
 
-URL dispatch route mappings
+URL dispatch, route mappings
 
 """
+
+from flask.ext import restful
 from mail_safe_test import app
-from mail_safe_test import resources
+from mail_safe_test.resources.oauth import login, oauth_callback, logout
 from mail_safe_test.resources.user import UserAPI, AdminUserAPI, AdminUserListAPI
 from mail_safe_test.resources.contact import ContactList, Contact
 from mail_safe_test.resources.doc import DocList, Doc
 from mail_safe_test.resources.link import Link
-from mail_safe_test.errors import HTTP_Error
 
-from flask.ext import restful
+app.add_url_rule('/login/', endpoint='login', view_func = login, methods=['GET'])
+app.add_url_rule('/login/oauth2callback/', endpoint='authorized', view_func = oauth_callback, methods=['GET', 'POST'])
+app.add_url_rule('/logout/', endpoint='logout', view_func = logout, methods=['GET'])
 
 app.api = restful.Api(app)
-api = app.api
-
-api.add_resource(AdminUserAPI, '/admin/user/<int:key_id>/', endpoint = '/admin/user/')
-api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users/')
+app.api.add_resource(AdminUserAPI, '/admin/user/<string:key_id>/', endpoint = '/admin/user/')
+app.api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users/')
 
 # Resources for the currently logged in user
-api.add_resource(UserAPI, '/user/', endpoint = '/user/')
-api.add_resource(ContactAPI,  '/user/contact/<int:contact_id>/',endpoint =  '/contact/')
-api.add_resource(ContactListAPI,  '/user/contacts/',endpoint =  '/contacts/')
-api.add_resource(DocAPI,       '/user/doc/<int:doc_id>/', endpoint = '/doc/')
-api.add_resource(DocListAPI,       '/user/docs/', endpoint = '/docs/')
+app.api.add_resource(UserAPI, '/user/', endpoint = '/user/')
+#app.api.add_resource(Contact,  '/user/contact/<int:contact_id>/',endpoint =  '/contact/')
+app.api.add_resource(Doc,       '/user/doc/<int:doc_id>/', endpoint = '/doc/')
 
 # Login not required
-#api.add_resource(Link,     '/link/<int:link_id>')
+#app.api.add_resource(Link,     '/link/<int:link_id>/')
