@@ -4,15 +4,21 @@ urls.py
 URL dispatch, route mappings
 
 """
+
 from flask.ext import restful
 from mail_safe_test import app
+from mail_safe_test.resources.oauth import login, oauth_callback, logout, verify
 from mail_safe_test.resources.user import UserAPI, AdminUserAPI, AdminUserListAPI
 from mail_safe_test.resources.contact import ContactList, Contact
 from mail_safe_test.resources.doc import DocList, Doc
 from mail_safe_test.resources.link import Link
 
-app.api = restful.Api(app)
+app.add_url_rule('/login/', endpoint='login', view_func = login, methods=['GET'])
+app.add_url_rule('/login/oauth2callback/', endpoint='authorized', view_func = oauth_callback, methods=['GET', 'POST'])
+app.add_url_rule('/logout/', endpoint='logout', view_func = logout, methods=['GET'])
+app.add_url_rule('/verify/', endpoint='verify', view_func = verify, methods=['GET'])
 
+app.api = restful.Api(app)
 app.api.add_resource(AdminUserAPI, '/admin/user/<string:key_id>/', endpoint = '/admin/user/')
 app.api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users/')
 

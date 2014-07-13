@@ -4,6 +4,7 @@
 tests.py
 
 """
+
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from json import loads
@@ -27,14 +28,14 @@ class NonAuthUserTestCases(TestCase):
 
     def setUp(self):
         common_setUp(self)
-        self.data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}'
+        self.data='{"first_name": "Testy", "last_name": "McTest"}'
 
     def tearDown(self):
         self.testbed.deactivate()
 
     def test_user_get(self):
         rv = self.app.get('/user/')
-        self.assertEqual(400, rv.status_code)
+        self.assertEqual(403, rv.status_code)
 
     def test_user_id_get(self):
         rv = self.app.get('/user/1/')
@@ -44,20 +45,20 @@ class NonAuthUserTestCases(TestCase):
         rv = self.app.post('/user/',
                 data=self.data,
                 content_type='application/json',
-                headers = {'Authorization': '1'})
+                headers = {'Authorization': 'valid'})
         self.assertEqual(200, rv.status_code)
 
         data = loads(rv.data)
         self.assertEqual('Testy', data['first_name'])
         self.assertEqual('McTest', data['last_name'])
-        self.assertEqual('test@example.com', data['email'])
+        self.assertEqual('test@test.com', data['email'])
         #TODO (hpshelton 7/9/14): Verify the created date/time and the uri
 
     def test_create_invalid_user(self):
         rv = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest"}',
             content_type='application/json',
-            headers = {'Authorization': '1'})
+            headers = {'Authorization': 'invalid'})
         self.assertEqual(400, rv.status_code)
 
         data = loads(rv.data)
@@ -67,7 +68,7 @@ class NonAuthUserTestCases(TestCase):
         rv = self.app.post('/user/',
             data='{"first_name": "Testy", "last_name": "McTest"}',
             content_type='application/json',
-            headers = {'Authorization': '100'})
+            headers = {'Authorization': 'invalid'})
         self.assertEqual(400, rv.status_code)
 
 class UserAuthUserTestCases(TestCase):
@@ -90,14 +91,14 @@ class UserAuthUserTestCases(TestCase):
 
     def test_user_get(self):
         rv = self.app.get('/user/',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.id_token})
         self.assertEqual(200, rv.status_code)
                 
     def test_user_put(self):
         rv = self.app.put('/user/',
             data='{"first_name": "Changed"}',
             content_type='application/json',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.id_token})
         self.assertEqual(200, rv.status_code)
         
         # BUG (gdbelvin 7/12/14): This verification currently fails because the request parsing code
@@ -109,7 +110,7 @@ class UserAuthUserTestCases(TestCase):
         
     def test_user_delete(self):
         rv = self.app.delete('/user/',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
+            headers = {'Authorization': UserAuthUserTestCases.id_token})
         self.assertEqual(204, rv.status_code)
 
 class AdminAuthUserTestCases(TestCase):
@@ -117,8 +118,9 @@ class AdminAuthUserTestCases(TestCase):
     def setUp(self):
         common_setUp(self)
 
-        # Provision a valid admin user        
-        AdminAuthUserTestCases.admin_id = '10'
+        # Provision a valid admin user
+        AdminAuthUserTestCases.admin_id = "111111111111111111111"
+        AdminAuthUserTestCases.admin_token = "valid"
 
         args = {"id": AdminAuthUserTestCases.admin_id,
                 "first_name": "Admin",
@@ -133,7 +135,7 @@ class AdminAuthUserTestCases(TestCase):
 
     def test_users_get(self):
         rv = self.app.get('/admin/users/',
-            headers = {'Authorization': AdminAuthUserTestCases.admin_id})
+            headers = {'Authorization': AdminAuthUserTestCases.admin_token})
         self.assertEqual(200, rv.status_code)
 
         data = loads(rv.data)
