@@ -4,10 +4,12 @@
 tests.py
 
 """
-from json import loads
+from google.appengine.ext import ndb
 from google.appengine.ext import testbed
-from mail_safe_test import app
+from json import loads
 from unittest import TestCase
+from mail_safe_test import app
+from mail_safe_test.auth import UserModel
 
 def common_setUp(self):
     # Flask apps testing. See: http://flask.pocoo.org/docs/testing/
@@ -30,11 +32,11 @@ class NonAuthUserTestCases(TestCase):
     def tearDown(self):
         self.testbed.deactivate()
 
-    def test_user_endpoint(self):
+    def test_user_get(self):
         rv = self.app.get('/user/')
         self.assertEqual(400, rv.status_code)
 
-    def test_user_id_endpoint(self):
+    def test_user_id_get(self):
         rv = self.app.get('/user/1/')
         self.assertEqual(404, rv.status_code)
 
@@ -59,9 +61,7 @@ class NonAuthUserTestCases(TestCase):
         self.assertEqual(400, rv.status_code)
 
         data = loads(rv.data)
-        # Maybe check non-null or non-empty here?
-        self.assertEqual('Missing required parameter email in json',
-                         data['message'])
+        self.assertEqual('Missing required parameter email in json', data['message'])
 
     def test_put_invalid_user(self):
         rv = self.app.post('/user/',
@@ -77,27 +77,36 @@ class UserAuthUserTestCases(TestCase):
 
         # Provision a valid user
         UserAuthUserTestCases.user_id = '1'
-        rv = self.app.post('/user/',
-            data='{"first_name": "Testy", "last_name": "McTest", "email": "test@example.com"}',
-            content_type='application/json',
-            headers = {'Authorization': UserAuthUserTestCases.user_id})
-        self.assertEqual(200, rv.status_code)
+
+        args = {"id": UserAuthUserTestCases.user_id,
+                "first_name": "Testy",
+                "last_name": "McTest",
+                "email": "test@example.com" }
+        user = UserModel(**args)
+        user.put()
 
     def tearDown(self):
         self.testbed.deactivate()
 
-    def test_user_endpoint(self):
+    def test_user_get(self):
         rv = self.app.get('/user/',
             headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(200, rv.status_code)
-
+                
     def test_user_put(self):
         rv = self.app.put('/user/',
             data='{"first_name": "Changed"}',
             content_type='application/json',
             headers = {'Authorization': UserAuthUserTestCases.user_id})
         self.assertEqual(200, rv.status_code)
-
+        
+        # BUG (gdbelvin 7/12/14): This verification currently fails because the request parsing code
+        # assigns None to all unspecified request values, updating all entries with None in the DB.
+        data = loads(rv.data)
+        self.assertEqual('Changed', data['first_name'])
+        self.assertEqual('McTest', data['last_name'], "Gary needs to fix request parsing for PUT")
+        self.assertEqual('test@example.com', data['email'])
+        
     def test_user_delete(self):
         rv = self.app.delete('/user/',
             headers = {'Authorization': UserAuthUserTestCases.user_id})
@@ -108,23 +117,21 @@ class AdminAuthUserTestCases(TestCase):
     def setUp(self):
         common_setUp(self)
 
-        # Provision a valid admin user
-        AdminAuthUserTestCases.admin_id = "0" #Ids are strings
+        # Provision a valid admin user        
+        AdminAuthUserTestCases.admin_id = '10'
 
-        from mail_safe_test.auth import UserModel
-        from google.appengine.ext import ndb
         args = {"id": AdminAuthUserTestCases.admin_id,
                 "first_name": "Admin",
                 "last_name": "McAdmin",
                 "email": "admin@example.com",
-                "admin": True}
+                "admin": True }
         user = UserModel(**args)
         user.put()
 
     def tearDown(self):
         self.testbed.deactivate()
 
-    def test_users_endpoint(self):
+    def test_users_get(self):
         rv = self.app.get('/admin/users/',
             headers = {'Authorization': AdminAuthUserTestCases.admin_id})
         self.assertEqual(200, rv.status_code)

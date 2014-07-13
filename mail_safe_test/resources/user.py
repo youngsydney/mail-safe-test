@@ -72,10 +72,8 @@ class AdminUserListAPI(Resource):
 
 class UserAPI(Resource):
     def __init__(self):
-        self.put_parser  = parser.copy()
-        self.post_parser = parser.copy()
-        self.post_parser.replace_argument('email', type = str, required = True,
-                location = 'json')
+        self.post_parser = None
+        self.put_parser  = None
         super(UserAPI, self).__init__()
 
     @marshal_with(user_fields)
@@ -86,6 +84,11 @@ class UserAPI(Resource):
 
     @marshal_with(user_fields)
     def post(self):
+        # Define required POST params
+        if self.post_parser is None:
+            self.post_parser = parser.copy()
+            self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
+
         if current_user(request):
             abort(409)  # Don't create duplicate users.
         sub = request.headers.get('Authorization')
@@ -99,6 +102,11 @@ class UserAPI(Resource):
     @marshal_with(user_fields)
     @user_required
     def put(self):
+        # Define required PUT params
+        if self.put_parser is None:
+            self.put_parser  = parser.copy()
+            self.put_parser.replace_argument('email', type = str, required = False, location = 'json')
+
         user = current_user(request)
         args = self.put_parser.parse_args()
         user.populate(**args)
