@@ -44,16 +44,15 @@ class AuthUserDocTestCases(TestCase):
     def tearDown(self):
         self.testbed.deactivate()
 
-    def test_doc_put(self):
-        args = {"content" : "This is my revised testing document."}
-        doc = DocModel(**args)
-        doc.put()
+    def test_doc_none_put(self):
+        rv = self.app.put('/doc/25/',
+            data='{"content": "This is my revised testing document."}')
+        self.assertEqual(404, rv.status_code)
 
-    def test_doc_post(self):
-        AuthUserDocTestCases.doc_id = "9"
+    def test_doc_id_none_get(self):
+        rv = self.app.get('/doc/25/')
+        self.assertEqual(404, rv.status_code)
 
-        args = {"id" : AuthUserDocTestCases.doc_id,
-                "content" : "This is my testing document.",
-                "status" : "draft"}
-        doc = DocModel(**args)
-        doc.put()
+    def test_doc_id_none_delete(self):
+        rv = self.app.delete('/doc/25/')
+        self.assertEqual(404, rv.status_code)

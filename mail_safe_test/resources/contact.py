@@ -75,7 +75,12 @@ class Contact(Resource):
     @marshal_with(contact_fields)
     @user_required
     def post(self):
-        contact = ContactModel.query_by_id(user, contact_id)
+        # Define required POST params
+        if self.post_parser is None:
+            self.post_parser = parser.copy()
+            self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
+            self.post_parser.replace_argument('phone', type = str, required = True, location = 'json')
+
         if contact is not None:
             abort(403)
         args = self.post_parser.parse_args()

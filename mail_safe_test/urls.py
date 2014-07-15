@@ -25,7 +25,9 @@ app.api.add_resource(AdminUserListAPI, '/admin/users/', endpoint = '/admin/users
 # Resources for the currently logged in user
 app.api.add_resource(UserAPI, '/user/', endpoint = '/user/')
 app.api.add_resource(Contact,  '/user/contact/<int:contact_id>/',endpoint =  '/contact/')
+app.api.add_resource(ContactList,  '/user/contacts/',endpoint =  '/contacts/')
 app.api.add_resource(Doc,       '/user/doc/<int:doc_id>/', endpoint = '/doc/')
+app.api.add_resource(Doc,       '/user/docs/', endpoint = '/docs/')
 
 # Login not required
 #app.api.add_resource(Link,     '/link/<int:link_id>/')
