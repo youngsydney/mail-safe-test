@@ -1,16 +1,13 @@
-import flask
-from flask import request, Response, abort, make_response
-from flask.ext import restful
-from flask.ext.restful import fields, marshal, marshal_with, reqparse
-import flask_restful
-from flask_ndb_api import NDBJSONEncoder, ndbdumps, entity_to_dict
-from google.appengine.ext import ndb
-import json
-from urlparse import urlparse, urlunparse
-from mail_safe_test.errors import HTTP_Error
-from mail_safe_test import app
+"""
+contact.py
 
-#	Class NDBUrl? is this something that needs to be in every .py?
+"""
+
+from flask import request, Response, abort, make_response
+from flask.ext.restful import Resource, fields, marshal_with, reqparse
+from google.appengine.ext import ndb
+from mail_safe_test.custom_fields import NDBUrl
+from mail_safe_test.auth import current_user, user_required, admin_required, UserModel
 
 # Public exports
 contact_fields = {
@@ -19,7 +16,6 @@ contact_fields = {
     'email': fields.String,
     'phone': fields.String,
     'uri': NDBUrl('/user/contact/')
-#	'uri': NDBUrl('/user/contacts/')
 }
 
 parser = reqparse.RequestParser()
@@ -32,7 +28,7 @@ parser.add_argument('Authorization', type=str, required=True, location='headers'
 
 class ContactModel(ndb.Model):
     # id - in this key
-    # owner - in parent key (author/user)
+    # user - in parent key (author/user)
     first_name = ndb.StringProperty()
     last_name = ndb.StringProperty()
     email = ndb.StringProperty()
@@ -40,40 +36,28 @@ class ContactModel(ndb.Model):
     oauth = ndb.StringProperty()
 
     @classmethod
-    def query_by_owner(cls, owner):
-        ancestor_key = ndb.Key("User", owner)
-        return cls.query(ancestor=ancestor_key).order(-cls.date).get()
-
-    @classmethod
-    def query_by_id(cls, owner, contact_id):
-        contact_key = ndb.Key("User", owner, ContactModel, contact_id)
+    def query_by_id(cls, user, contact_id):
+        contact_key = ndb.Key(UserModel, user, ContactModel, contact_id)
         return contact_key.get()
 
-def get_owner(request):
-    owner_id = request.headers.get('Authorization')
-    if not owner_id or not owner_id.isdigit():
-        abort(400)
-    key_id = int(owner_id)
-    return ndb.Key(UserModel, owner_id).get()
-
-class ContactListAPI(restful.Resource):
+class ContactList(Resource):
+    method_decorators = [user_required]
     contact_list_fields = {'contacts': fields.List(fields.Nested(contact_fields))}
     
     @marshal_with(contact_list_fields)
+    @user_required
     def get(self):
-    	owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-    	contacts = ContactModel.query_by_owner("owner")
+    	contacts = ContactModel.query().fetch()
     	return {'contacts': contacts}
 
     @marshal_with(contact_list_fields)
+    @user_required
     def delete(self):
-    	ndb.delete_multi(ContactModel.query_by_owner("owner")
-    	contacts = ContactModel.query_by_owner("owner")
-    	return {'contacts': contacts}
+    	ndb.delete_multi(ContactModel.query().fetch(keys_only=True))
+        contacts = ContactModel.query().fetch()
+        return {'contacts': contacts}
 
-class ContactAPI(restful.Resource):
+class Contact(Resource):
     def __init__(self):
         self.post_parser = parser.copy()
         self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
@@ -81,21 +65,17 @@ class ContactAPI(restful.Resource):
         super(ContactAPI, self).__init__()
 
     @marshal_with(contact_fields)
+    @user_required
     def get(self, contact_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        contact = ContactModel.query_by_id("owner", contact_id)
+        contact = ContactModel.query_by_id(user, contact_id)
         if contact is None:
             abort(404)
         return contact
 
     @marshal_with(contact_fields)
-    def post(self, contact_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        contact = ContactModel.query_by_id("owner", contact_id)
+    @user_required
+    def post(self):
+        contact = ContactModel.query_by_id(user, contact_id)
         if contact is not None:
             abort(403)
         args = self.post_parser.parse_args()
@@ -104,11 +84,9 @@ class ContactAPI(restful.Resource):
         return contact
 
     @marshal_with(contact_fields)
+    @user_required
     def put(self, contact_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        contact = ContactModel.query_by_id("owner", contact_id)
+        contact = ContactModel.query_by_id(user, contact_id)
         if not contact:
             abort(404)
         args = self.put_parser.parse_args()
@@ -116,11 +94,9 @@ class ContactAPI(restful.Resource):
         contact.put()
         return contact
 
+    @user_required
     def delete(self, contact_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        contact = ContactModel.query_by_id("owner", contact_id)
+        contact = ContactModel.query_by_id(user, contact_id)
         if not contact:
             abort(404)
         contact.key.delete()

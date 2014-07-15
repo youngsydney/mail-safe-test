@@ -1,17 +1,13 @@
-import flask
-from flask import request, Response, abort, make_response
-from flask.ext import restful
-from flask.ext.restful import fields, marshal, marshal_with, reqparse
-import flask_restful
-from flask_ndb_api import NDBJSONEncoder, ndbdumps, entity_to_dict
-from google.appengine.ext import ndb
-import json
-from urlparse import urlparse, urlunparse
-from mail_safe_test.errors import HTTP_Error
-from mail_safe_test import app
-from mail_safe_test import user
+"""
+doc.py
 
-#   Class NDBUrl? is this something that needs to be in every .py?
+"""
+
+from flask import request, Response, abort, make_response
+from flask.ext.restful import Resource, fields, marshal_with, reqparse
+from google.appengine.ext import ndb
+from mail_safe_test.custom_fields import NDBUrl
+from mail_safe_test.auth import current_user, user_required, admin_required, UserModel
 
 #   public exports
 doc_fields = {
@@ -19,7 +15,6 @@ doc_fields = {
     'date': fields.DateTime,
     'status': fields.String,
     'uri': NDBUrl('/user/doc/')
-#   'uri': NDBUrl('/user/docs/')
 }
 
 parser = reqparse.RequestParser()
@@ -29,92 +24,71 @@ parser.add_argument('Authorization', type=str, required=True, location='headers'
                             dest='oauth')
 
 class DocModel(ndb.Model):
-    # id - in this key
-    # owner - in parent key (user)
     content = ndb.StringProperty()
     date = ndb.DateTimeProperty(auto_now_add=True)
     status = ndb.StringProperty()
     oauth = ndb.StringProperty()
 
     @classmethod
-    def query_by_owner(cls, owner):
-        ancestor_key = ndb.Key("User", owner)
-        return cls.query(ancestor=ancestor_key).order(-cls.date).get()
-
-    @classmethod
-    def query_by_id(cls, owner, doc_id):
-        doc_key = ndb.Key("User", owner, DocModel, doc_id)
+    def query_by_id(cls, user, doc_id):
+        doc_key = ndb.Key(UserModel, user, DocModel, doc_id)
         return doc_key.get()
 
-def get_owner(request):
-    owner_id = request.headers.get('Authorization')
-    if not owner_id or not owner_id.isdigit():
-        abort(400)
-    key_id = int(owner_id)
-    return ndb.Key(UserModel, owner_id).get()
-
-class DocListAPI(restful.Resource):
+class DocList(Resource):
+    method_decorators = [user_required]
     doc_list_fields = {'users': fields.List(fields.Nested(doc_fields))}
 
-    def get(self):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        doc_list = DocModel.query_by_owner("owner")
-        return json.dumps(doc_list, cls=NDBJSONEncoder)
-
     @marshal_with(doc_list_fields)
-    def delete(self):
-        ndb.delete_multi(DocModel.query_by_owner("owner")
-        docs = DocModel.query_by_owner("owner")
+    @user_required
+    def get(self):
+        docs = DocModel.query().fetch(keys_only=True))
         return {'docs': docs}
 
-class DocAPI(restful.Resource):
+    @marshal_with(doc_list_fields)
+    @user_required
+    def delete(self):
+        ndb.delete_multi(DocModel.query().fetch(keys_only=True))
+        docs = DocModel.query().fetch()
+        return {'docs': docs}
+
+class Doc(Resource):
     def __init__(self):
         self.post_parser = parser.copy()
-        self.post_parser.replace_argument('owner', type = str, required = True, location = 'json')
+        self.post_parser.replace_argument(user, type = str, required = True, location = 'json')
         self.put_parser = parser.copy()
         super(DocAPI, self).__init__()
 
+    @marshal_with(doc_fields)
+    @user_required
     def get(self, doc_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        doc_item = DocModel.query_by_id("owner", doc_id)
-        if doc_item is None
+        doc_item = DocModel.query_by_id(user, doc_id)
+        if not doc_item: 
             abort(404)
-        return json.dumps(doc_item, cls=NDBJSONEncoder)
+        return doc_item
 
+    @user_required
     def delete(self, doc_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        doc_item = DocModel.query_by_id("owner", doc_id)
-        if doc_item is None
+        doc_item = DocModel.query_by_id(user, doc_id)
+        if not doc_item:
             abort(404)
         doc_item.key.delete()
-        return "", 204
+        return make_response("", 204)
 
+    @marshal_with(doc_fields)
+    @user_required
     def put(self, doc_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        doc_item = DocModel.query_by_id("owner", doc_id)
-        if doc_item is None
+        doc_item = DocModel.query_by_id(user, doc_id)
+        if not doc_item:
             abort(404)
         args = parser.parse_args()
         doc_item.populate(**args)
         doc_item.put()
-        return doc_item, 201
+        return doc_item
 
-    def post(self, doc_id):
-        owner = get_owner(request)
-        if not auth_owner
-            abort(403)
-        doc_item = DocModel.query_by_id("owner", doc_id)
-        if doc_item is not None
-            abort(403)
+    @marshal_with(doc_fields)
+    @user_required
+    def post(self):
         args = parser.parse_args()
         doc_item.populate(**args)
         doc_item.put()
-        return doc_item, 201
+        return doc_item
