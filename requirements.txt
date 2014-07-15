@@ -14,7 +14,8 @@ six
 aniso8601
 pytz
 
-#authomatic
-#python-openid
 Flask-OAuthlib
 oauthlib==0.6.1
+
+git+https://github.com/gdbelvin/oauth2client.git#egg=oauth2client
+httplib2

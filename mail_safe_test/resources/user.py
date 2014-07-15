@@ -7,7 +7,7 @@ from flask import request, Response, abort, make_response
 from flask.ext.restful import Resource, fields, marshal_with, reqparse
 from google.appengine.ext import ndb
 from mail_safe_test.custom_fields import NDBUrl
-from mail_safe_test.auth import current_user, user_required, admin_required, UserModel
+from mail_safe_test.auth import current_user, user_required, current_user_token_info, admin_required, UserModel
 
 # Public exports
 user_fields = {
@@ -72,34 +72,46 @@ class AdminUserListAPI(Resource):
 
 class UserAPI(Resource):
     def __init__(self):
-        self.put_parser  = parser.copy()
-        self.post_parser = parser.copy()
-        self.post_parser.replace_argument('email', type = str, required = True,
-                location = 'json')
+        self.post_parser = None
+        self.put_parser  = None
         super(UserAPI, self).__init__()
 
     @marshal_with(user_fields)
     @user_required
     def get(self):
-        user = current_user(request)
+        user = current_user()
         return user
 
     @marshal_with(user_fields)
     def post(self):
-        if current_user(request):
+        # Define required POST params
+        if self.post_parser is None:
+            self.post_parser = parser.copy()
+            self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
+
+        if current_user():
             abort(409)  # Don't create duplicate users.
-        sub = request.headers.get('Authorization')
-        if not sub:
+        jwt = current_user_token_info()
+        if not jwt:
             abort(400)
         args = self.post_parser.parse_args()
-        user = UserModel(id=sub, **args)
+        args['id'] = jwt['sub']
+        # Not sure what email policy to have. Use the authenticated
+        # email, or allow arbitrary emails?
+        args['email'] = jwt['email']
+        user = UserModel(**args)
         user.put()
         return user
 
     @marshal_with(user_fields)
     @user_required
     def put(self):
-        user = current_user(request)
+        # Define required PUT params
+        if self.put_parser is None:
+            self.put_parser  = parser.copy()
+            self.put_parser.replace_argument('email', type = str, required = False, location = 'json')
+
+        user = current_user()
         args = self.put_parser.parse_args()
         user.populate(**args)
         user.put()
@@ -107,6 +119,6 @@ class UserAPI(Resource):
 
     @user_required
     def delete(self):
-        user = current_user(request)
+        user = current_user()
         user.key.delete()  # Delete a single user.
         return make_response("", 204)

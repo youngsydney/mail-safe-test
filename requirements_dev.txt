@@ -5,3 +5,4 @@ unittest2
 Jinja2>=2.4
 markupsafe
 gaenv
+PyCrypto
