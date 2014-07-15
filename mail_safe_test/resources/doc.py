@@ -41,7 +41,7 @@ class DocList(Resource):
     @marshal_with(doc_list_fields)
     @user_required
     def get(self):
-        docs = DocModel.query().fetch(keys_only=True))
+        docs = DocModel.query().fetch(keys_only=True)
         return {'docs': docs}
 
     @marshal_with(doc_list_fields)
