@@ -120,5 +120,7 @@ class UserAPI(Resource):
     @user_required
     def delete(self):
         user = current_user()
-        user.key.delete()  # Delete a single user.
+        if not user:
+            abort(400)
+        user.key.delete() # Delete a single user.
         return make_response("", 204)
