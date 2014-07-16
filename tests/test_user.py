@@ -85,9 +85,27 @@ class NonAuthUserTestCases(TestCase):
         rv = self.app.delete('/user/')
         self.assertEqual(403, rv.status_code)
 
-    def test_user_delete_no_auth(self):
+    def test_user_delete_invalid_auth(self):
         rv = self.app.delete('/user/',
                 headers = {'Authorization': 'invalid'})
+        self.assertEqual(403, rv.status_code)
+
+    def test_users_get_no_auth(self):
+        rv = self.app.get('/admin/users/')
+        self.assertEqual(403, rv.status_code)
+
+    def test_users_get_invalid_auth(self):
+        rv = self.app.delete('/admin/users/',
+                headers = {'Authorization': 'invalid'})
+        self.assertEqual(403, rv.status_code)
+        
+    def test_users_delete_no_auth(self):
+        rv = self.app.delete('/admin/users/')
+        self.assertEqual(403, rv.status_code)
+
+    def test_users_delete_invalid_auth(self):
+        rv = self.app.delete('/admin/users/',
+            headers = {'Authorization': 'invalid'})
         self.assertEqual(403, rv.status_code)
 
 class UserAuthUserTestCases(TestCase):
@@ -218,7 +236,13 @@ class UserAuthUserTestCases(TestCase):
         rv = self.app.get('/admin/users/',
             headers = {'Authorization': UserAuthUserTestCases.user2_token})
         self.assertEqual(403, rv.status_code)
-
+        
+    def test_users_delete(self):
+        verify_user_count(self, 1)
+        rv = self.app.delete('/admin/users/',
+            headers = {'Authorization': UserAuthUserTestCases.user_token})
+        self.assertEqual(403, rv.status_code)
+        verify_user_count(self, 1)
 
 class AdminAuthUserTestCases(TestCase):
 
@@ -236,6 +260,17 @@ class AdminAuthUserTestCases(TestCase):
                 "admin": True }
         user = UserModel(**args)
         user.put()
+        
+        # Provision a valid user
+        AdminAuthUserTestCases.user_id = '111111111111111111111'
+        AdminAuthUserTestCases.user_token = "valid_user"
+
+        args = {"id": AdminAuthUserTestCases.user_id,
+                "first_name": "Testy",
+                "last_name": "McTest",
+                "email": "user@example.com" }
+        user = UserModel(**args)
+        user.put()
 
     def tearDown(self):
         self.testbed.deactivate()
@@ -246,6 +281,19 @@ class AdminAuthUserTestCases(TestCase):
         self.assertEqual(200, rv.status_code)
 
         data = loads(rv.data)
-        self.assertEqual('Admin', data['users'][0]['first_name'])
-        self.assertEqual('McAdmin', data['users'][0]['last_name'])
-        self.assertEqual('admin@example.com', data['users'][0]['email'])
+        self.assertEqual('Testy', data['users'][0]['first_name'])
+        self.assertEqual('McTest', data['users'][0]['last_name'])
+        self.assertEqual('user@example.com', data['users'][0]['email'])
+
+        self.assertEqual('Admin', data['users'][1]['first_name'])
+        self.assertEqual('McAdmin', data['users'][1]['last_name'])
+        self.assertEqual('admin@example.com', data['users'][1]['email'])
+
+    def test_users_delete(self):
+        verify_user_count(self, 2)
+        rv = self.app.delete('/admin/users/',
+            headers = {'Authorization': AdminAuthUserTestCases.admin_token})
+        self.assertEqual(200, rv.status_code)
+        verify_user_count(self, 0)
+        data = loads(rv.data)
+        self.assertEqual([], data['users']);
