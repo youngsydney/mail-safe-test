@@ -25,9 +25,9 @@ def common_setUp(self):
     self.testbed.init_user_stub()
     self.testbed.init_memcache_stub()
 
-# def verify_contact_count(self, contact_count):
-#     contacts = ContactModel.query().fetch()
-#     self.assertEqual(contact_count, len(contacts))
+def verify_contact_count(self, contact_count):
+    contacts = ContactModel.query().fetch()
+    self.assertEqual(contact_count, len(contacts))
 
 class AuthUserContactTestCases(TestCase):
 
@@ -35,13 +35,13 @@ class AuthUserContactTestCases(TestCase):
         common_setUp(self)
 
         AuthUserContactTestCases.user_id = '111111111111111111111'
-        AuthUserContactTestCases.user_token = "valid_test_user"
+        AuthUserContactTestCases.user_token = "valid_user_contact"
 
         # Provision a valid user
         args = {"id": AuthUserContactTestCases.user_id,
                 "first_name": "Testy",
                 "last_name": "McTest",
-                "email": "testuser@example.com" }
+                "email": "usercontact@example.com" }
         user = UserModel(**args)
         user.put()
 
@@ -64,13 +64,13 @@ class AuthUserContactTestCases(TestCase):
         self.assertEqual(404, rv.status_code)
 
     def test_contact_post(self):
-        # verify_contact_count(self, 0)
+        verify_contact_count(self, 0)
         rv = self.app.post('/contact/',
                 data='{"first_name": "Best", "last_name": "Friend", "email": "bestfriend@test.com", "phone": "1234567891"}',
                 content_type='application/json',
                 headers = {'Authorization': AuthUserContactTestCases.user_token})
         self.assertEqual(200, rv.status_code)
-        # verify_contact_count(self, 1)
+        verify_contact_count(self, 1)
         
     def test_contact_post_duplicate(self):
         # verify_contact_count(self, 1)

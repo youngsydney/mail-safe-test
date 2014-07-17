@@ -78,9 +78,10 @@ class Contact(Resource):
             self.post_parser = parser.copy()
             self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
             self.post_parser.replace_argument('phone', type = str, required = True, location = 'json')
-
-        if contact is not None:
-            abort(403)
+        jwt = current_user_token_info()
+        if not jwt:
+            abort(400)
+        args['id'] = jwt['sub']
         args = self.post_parser.parse_args()
         contact = ContactModel(**args)
         contact.put()
