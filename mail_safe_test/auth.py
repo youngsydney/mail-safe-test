@@ -35,42 +35,59 @@ def current_user_token_info():
         return None
     if app.config['TESTING'] and id_token == "valid_user":
         return {
-               "at_hash": "x_UrBCcmyP2xSki42gqOxw",
-               "aud": app.config.get('GOOGLE_ID'),
-               "azp": app.config.get('GOOGLE_ID'),
-               "cid": app.config.get('GOOGLE_ID'),
-               "email": "user@example.com",
-               "email_verified": True,
-               "exp": 1405154845,
-               "iat": 1405150945,
-               "id": "111111111111111111111",
-               "iss": "accounts.google.com",
-               "sub": "111111111111111111111",
-               "token_hash": "xxxxxxxxxxxxxxxxxxxxxx",
-               "verified_email": True,
+            "at_hash": "x_UrBCcmyP2xSki42gqOxw",
+            "aud": app.config.get('GOOGLE_ID'),
+            "azp": app.config.get('GOOGLE_ID'),
+            "cid": app.config.get('GOOGLE_ID'),
+            "email": "user@example.com",
+            "email_verified": True,
+            "exp": 1405154845,
+            "iat": 1405150945,
+            "id": "111111111111111111111",
+            "iss": "accounts.google.com",
+            "sub": "111111111111111111111",
+            "token_hash": "xxxxxxxxxxxxxxxxxxxxxx",
+            "verified_email": True
+        }
+    elif app.config['TESTING'] and id_token == "valid_user2":
+        return {
+            "at_hash": "x_UrBCcmyP2xSki42gqOxw",
+            "aud": app.config.get('GOOGLE_ID'),
+            "azp": app.config.get('GOOGLE_ID'),
+            "cid": app.config.get('GOOGLE_ID'),
+            "email": "user2@example.com",
+            "email_verified": True,
+            "exp": 1405154845,
+            "iat": 1405150945,
+            "id": "111111111111111111112",
+            "iss": "accounts.google.com",
+            "sub": "111111111111111111112",
+            "token_hash": "xxxxxxxxxxxxxxxxxxxxxx",
+            "verified_email": True
         }
     elif app.config['TESTING'] and id_token == "valid_admin":
         return {
-               "at_hash": "x_UrBCcmyP2xSki42gqOxw",
-               "aud": app.config.get('GOOGLE_ID'),
-               "azp": app.config.get('GOOGLE_ID'),
-               "cid": app.config.get('GOOGLE_ID'),
-               "email": "admin@example.com",
-               "email_verified": True,
-               "exp": 1405154845,
-               "iat": 1405150945,
-               "id": "222222222222222222222",
-               "iss": "accounts.google.com",
-               "sub": "222222222222222222222",
-               "token_hash": "xxxxxxxxxxxxxxxxxxxxxx",
-               "verified_email": True,
+            "at_hash": "x_UrBCcmyP2xSki42gqOxw",
+            "aud": app.config.get('GOOGLE_ID'),
+            "azp": app.config.get('GOOGLE_ID'),
+            "cid": app.config.get('GOOGLE_ID'),
+            "email": "admin@example.com",
+            "email_verified": True,
+            "exp": 1405154845,
+            "iat": 1405150945,
+            "id": "222222222222222222222",
+            "iss": "accounts.google.com",
+            "sub": "222222222222222222222",
+            "token_hash": "xxxxxxxxxxxxxxxxxxxxxx",
+            "verified_email": True
         }
     try:
-        return  verify_id_token(id_token, app.config.get('GOOGLE_ID'))
+        return verify_id_token(id_token, app.config.get('GOOGLE_ID'))
         user_id = jwt['sub']
         return ndb.Key(UserModel, user_id).get()
     except AppIdentityError as e:
-        print "error", e
+        if not (app.config['TESTING'] and id_token == "invalid"):
+            print "error", e
         return None
 
 def user_required(func):
