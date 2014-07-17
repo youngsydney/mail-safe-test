@@ -232,17 +232,23 @@ class UserAuthUserTestCases(TestCase):
         self.assertEqual(403, rv.status_code)
         verify_user_count(self, 0)
 
-    def test_users_get(self):
+    def test_admin_users_get(self):
         rv = self.app.get('/admin/users/',
             headers = {'Authorization': UserAuthUserTestCases.user2_token})
         self.assertEqual(403, rv.status_code)
         
-    def test_users_delete(self):
+    def test_admin_users_delete(self):
         verify_user_count(self, 1)
         rv = self.app.delete('/admin/users/',
             headers = {'Authorization': UserAuthUserTestCases.user_token})
         self.assertEqual(403, rv.status_code)
         verify_user_count(self, 1)
+        
+    def test_admin_user_id_get(self):
+        rv = self.app.get('/admin/user/111111111111111111111/',
+            headers = {'Authorization': UserAuthUserTestCases.user_token})
+        self.assertEqual(403, rv.status_code)
+        
 
 class AdminAuthUserTestCases(TestCase):
 
@@ -275,7 +281,7 @@ class AdminAuthUserTestCases(TestCase):
     def tearDown(self):
         self.testbed.deactivate()
 
-    def test_users_get(self):
+    def test_admin_users_get(self):
         rv = self.app.get('/admin/users/',
             headers = {'Authorization': AdminAuthUserTestCases.admin_token})
         self.assertEqual(200, rv.status_code)
@@ -289,7 +295,7 @@ class AdminAuthUserTestCases(TestCase):
         self.assertEqual('McAdmin', data['users'][1]['last_name'])
         self.assertEqual('admin@example.com', data['users'][1]['email'])
 
-    def test_users_delete(self):
+    def test_admin_users_delete(self):
         verify_user_count(self, 2)
         rv = self.app.delete('/admin/users/',
             headers = {'Authorization': AdminAuthUserTestCases.admin_token})
@@ -297,3 +303,57 @@ class AdminAuthUserTestCases(TestCase):
         verify_user_count(self, 0)
         data = loads(rv.data)
         self.assertEqual([], data['users']);
+    
+    def test_admin_user_id_get(self):
+        rv = self.app.get('/admin/user/' + AdminAuthUserTestCases.user_id + '/',
+            headers = {'Authorization': AdminAuthUserTestCases.admin_token})
+        self.assertEqual(200, rv.status_code)
+
+        data = loads(rv.data)
+        self.assertEqual('Testy', data['first_name'])
+        self.assertEqual('McTest', data['last_name'])
+        self.assertEqual('user@example.com', data['email'])
+        
+    def test_admin_user_id_get_invalid(self):
+        rv = self.app.get('/admin/user/11/',
+            headers = {'Authorization': AdminAuthUserTestCases.admin_token})
+        self.assertEqual(404, rv.status_code)
+        
+    def test_admin_user_put(self):
+        verify_user_count(self, 2)
+        rv = self.app.put('/admin/user/' + AdminAuthUserTestCases.user_id + '/',
+                data='{"first_name": "Changed"}',
+                content_type='application/json',
+                headers = {'Authorization': AdminAuthUserTestCases.admin_token})
+        self.assertEqual(200, rv.status_code)
+
+        # BUG (gdbelvin 7/12/14): This verification currently fails because the request parsing code
+        # assigns None to all unspecified request values, updating all entries with None in the DB.
+        data = loads(rv.data)
+        self.assertEqual('Changed', data['first_name'])
+        self.assertEqual('McTest', data['last_name'], "Gary needs to fix request parsing for PUT")
+        self.assertEqual('user@example.com', data['email'])
+        verify_user_count(self, 2)
+
+    def test_admin_user_put_invalid(self):
+        verify_user_count(self, 2)
+        rv = self.app.put('/admin/user/11/',
+                data='{"first_name": "Testy", "last_name": "McTest", "email": "test@test.com"}',
+                content_type='application/json',
+                headers = {'Authorization': AdminAuthUserTestCases.admin_token})
+        self.assertEqual(404, rv.status_code)
+        verify_user_count(self, 2)
+
+    def test_admin_user_id_delete(self):
+        verify_user_count(self, 2)
+        rv = self.app.delete('/admin/user/' + AdminAuthUserTestCases.user_id + '/',
+            headers = {'Authorization': AdminAuthUserTestCases.admin_token})
+        self.assertEqual(204, rv.status_code)
+        verify_user_count(self, 1)
+
+    def test_admin_user_id_delete_invalid(self):
+        verify_user_count(self, 2)
+        rv = self.app.delete('/admin/user/11/',
+            headers = {'Authorization': AdminAuthUserTestCases.admin_token})
+        self.assertEqual(404, rv.status_code)
+        verify_user_count(self, 2)

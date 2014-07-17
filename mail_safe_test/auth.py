@@ -82,11 +82,12 @@ def current_user_token_info():
             "verified_email": True
         }
     try:
-        return  verify_id_token(id_token, app.config.get('GOOGLE_ID'))
+        return verify_id_token(id_token, app.config.get('GOOGLE_ID'))
         user_id = jwt['sub']
         return ndb.Key(UserModel, user_id).get()
     except AppIdentityError as e:
-        print "error", e
+        if not (app.config['TESTING'] and id_token == "invalid"):
+            print "error", e
         return None
 
 def user_required(func):
