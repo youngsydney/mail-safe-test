@@ -23,8 +23,6 @@ parser.add_argument('first_name', type = str, location = 'json')
 parser.add_argument('last_name', type = str, location = 'json')
 parser.add_argument('email', type = str, location = 'json')
 parser.add_argument('phone', type = str, location = 'json')
-parser.add_argument('Authorization', type=str, required=True, location='headers',
-                            dest='oauth')
 
 class ContactModel(ndb.Model):
     # id - in this key
