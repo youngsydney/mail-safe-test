@@ -81,22 +81,6 @@ def current_user_token_info():
             "token_hash": "xxxxxxxxxxxxxxxxxxxxxx",
             "verified_email": True
         }
-    elif app.config['TESTING'] and id_token == "valid_user_contact":
-        return {
-            "at_hash": "x_UrBCcmyP2xSki42gqOxw",
-            "aud": app.config.get('GOOGLE_ID'),
-            "azp": app.config.get('GOOGLE_ID'),
-            "cid": app.config.get('GOOGLE_ID'),
-            "email": "usercontact@example.com",
-            "email_verified": True,
-            "exp": 1405154845,
-            "iat": 1405150945,
-            "id": "111111111111111111112",
-            "iss": "accounts.google.com",
-            "sub": "111111111111111111112",
-            "token_hash": "xxxxxxxxxxxxxxxxxxxxxx",
-            "verified_email": True
-        }
     try:
         return verify_id_token(id_token, app.config.get('GOOGLE_ID'))
         user_id = jwt['sub']

@@ -43,19 +43,20 @@ class ContactList(Resource):
     contact_list_fields = {'contacts': fields.List(fields.Nested(contact_fields))}
     
     @marshal_with(contact_list_fields)
-    @user_required
     def get(self):
-    	contacts = ContactModel.query().fetch()
+    	ContactModel.query(ancestor=user.key).fetch()
     	return {'contacts': contacts}
 
     @marshal_with(contact_list_fields)
-    @user_required
     def delete(self):
-    	ndb.delete_multi(ContactModel.query().fetch(keys_only=True))
-        contacts = ContactModel.query().fetch()
+    	ndb.delete_multi(ContactModel.query(ancestor=user.key).fetch())
+        contacts = ContactModel.query(ancestor=user.key).fetch()
         return {'contacts': contacts}
 
 class Contact(Resource):
+    method_decorators = [user_required]
+
+    # Sydney look into the _init_, doesn't look right, same for doc.py
     def __init__(self):
         self.post_parser = parser.copy()
         self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
@@ -63,45 +64,41 @@ class Contact(Resource):
         super(ContactAPI, self).__init__()
 
     @marshal_with(contact_fields)
-    @user_required
     def get(self, contact_id):
+        user = current_user()
         contact = ContactModel.query_by_id(user, contact_id)
         if contact is None:
             abort(404)
         return contact
 
     @marshal_with(contact_fields)
-    @user_required
     def post(self):
         # Define required POST params
         if self.post_parser is None:
             self.post_parser = parser.copy()
             self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
             self.post_parser.replace_argument('phone', type = str, required = True, location = 'json')
-        jwt = current_user_token_info()
-        if not jwt:
-            abort(400)
-        args['id'] = jwt['sub']
+        user = current_user()
         args = self.post_parser.parse_args()
-        contact = ContactModel(**args)
+        contact = ContactModel(ancestor=user.key, **args)
         contact.put()
         return contact
 
     @marshal_with(contact_fields)
-    @user_required
     def put(self, contact_id):
+        user = current_user()
         contact = ContactModel.query_by_id(user, contact_id)
-        if not contact:
+        if contact is None:
             abort(404)
         args = self.put_parser.parse_args()
         contact.populate(**args)
         contact.put()
         return contact
 
-    @user_required
     def delete(self, contact_id):
+        user = current_user()
         contact = ContactModel.query_by_id(user, contact_id)
-        if not contact:
+        if contact is None:
             abort(404)
         contact.key.delete()
         return make_response("", 204)
