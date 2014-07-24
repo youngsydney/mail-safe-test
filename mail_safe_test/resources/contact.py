@@ -31,7 +31,6 @@ class ContactModel(ndb.Model):
     last_name = ndb.StringProperty()
     email = ndb.StringProperty()
     phone = ndb.StringProperty()
-    oauth = ndb.StringProperty()
 
     @classmethod
     def query_by_id(cls, user, contact_id):
@@ -49,7 +48,7 @@ class ContactList(Resource):
 
     @marshal_with(contact_list_fields)
     def delete(self):
-    	ndb.delete_multi(ContactModel.query(ancestor=user.key).fetch())
+        ndb.delete_multi(ContactModel.query(ancestor=user.key).fetch())
         contacts = ContactModel.query(ancestor=user.key).fetch()
         return {'contacts': contacts}
 
@@ -58,14 +57,15 @@ class Contact(Resource):
 
     # Sydney look into the _init_, doesn't look right, same for doc.py
     def __init__(self):
-        self.post_parser = parser.copy()
-        self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
-        self.put_parser = parser.copy()
+        self.post_parser = None
+        self.put_parser  = None
         super(ContactAPI, self).__init__()
 
     @marshal_with(contact_fields)
     def get(self, contact_id):
         user = current_user()
+        if user is None:
+            abort(404)
         contact = ContactModel.query_by_id(user, contact_id)
         if contact is None:
             abort(404)
@@ -73,12 +73,14 @@ class Contact(Resource):
 
     @marshal_with(contact_fields)
     def post(self):
-        # Define required POST params
+        # where is it getting the contact_id, do I have to set that for each contact created
         if self.post_parser is None:
             self.post_parser = parser.copy()
             self.post_parser.replace_argument('email', type = str, required = True, location = 'json')
             self.post_parser.replace_argument('phone', type = str, required = True, location = 'json')
         user = current_user()
+        if user is None:
+            abort(404)
         args = self.post_parser.parse_args()
         contact = ContactModel(ancestor=user.key, **args)
         contact.put()
@@ -86,7 +88,13 @@ class Contact(Resource):
 
     @marshal_with(contact_fields)
     def put(self, contact_id):
+        if self.put_parser is None:
+            self.put_parser = parser.copy()
+            self.put_parser.replace_argument('email', type = str, required = True, location = 'json')
+            self.put_parser.replace_argument('phone', type = str, required = True, location = 'json')
         user = current_user()
+        if user is None:
+            abort(404)
         contact = ContactModel.query_by_id(user, contact_id)
         if contact is None:
             abort(404)
@@ -97,6 +105,8 @@ class Contact(Resource):
 
     def delete(self, contact_id):
         user = current_user()
+        if user is None:
+            abort(404)
         contact = ContactModel.query_by_id(user, contact_id)
         if contact is None:
             abort(404)

@@ -5,24 +5,24 @@ doc.py
 
 from flask import request, Response, abort, make_response
 from flask.ext.restful import Resource, fields, marshal_with, reqparse
-from google.appengine.ext import ndb
+from google.appengine.ext import ndb, blobstore
 from mail_safe_test.custom_fields import NDBUrl
 from mail_safe_test.auth import current_user, user_required, admin_required, UserModel
 
 #   public exports
 doc_fields = {
-    'content': fields.String,
+    'content': ndb.BlobProperty,
     'date': fields.DateTime,
-    'status': fields.String,
+    'status': ndb.IntegerProperty,
     'uri': NDBUrl('/user/doc/')
 }
 
 parser = reqparse.RequestParser()
 parser.add_argument('content', type = str, location = 'json')
-parser.add_argument('status', type = str, location = 'json')
+parser.add_argument('status', type = int, location = 'json')
 
 class DocModel(ndb.Model):
-    content = ndb.StringProperty()
+    content = ndb.BlobProperty()
     date = ndb.DateTimeProperty(auto_now_add=True)
     status = ndb.StringProperty()
 
@@ -46,6 +46,7 @@ class DocList(Resource):
 
     @marshal_with(doc_list_fields)
     def delete(self):
+        user=current_user()
         ndb.delete_multi(DocModel.query(ancestor=user.key).fetch())
         docs = DocModel.query().fetch()
         return {'docs': docs}
@@ -89,7 +90,6 @@ class Doc(Resource):
 
     @marshal_with(doc_fields)
     def post(self):
-        # are there any required POST params for docs?
         user = current_user()
         args = self.post_parser.parse_args()
         doc = DocModel(ancestor=user.key, **args)
