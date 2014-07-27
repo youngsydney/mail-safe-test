@@ -43,11 +43,13 @@ class ContactList(Resource):
     
     @marshal_with(contact_list_fields)
     def get(self):
-    	ContactModel.query(ancestor=user.key).fetch()
+        user = current_user()
+    	contacts = ContactModel.query(ancestor=user.key).fetch()
     	return {'contacts': contacts}
 
     @marshal_with(contact_list_fields)
     def delete(self):
+        user = current_user()
         ndb.delete_multi(ContactModel.query(ancestor=user.key).fetch())
         contacts = ContactModel.query(ancestor=user.key).fetch()
         return {'contacts': contacts}
@@ -59,7 +61,7 @@ class Contact(Resource):
     def __init__(self):
         self.post_parser = None
         self.put_parser  = None
-        super(ContactAPI, self).__init__()
+        super(Contact, self).__init__()
 
     @marshal_with(contact_fields)
     def get(self, contact_id):
