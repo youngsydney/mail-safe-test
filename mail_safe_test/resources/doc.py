@@ -59,7 +59,7 @@ class Doc(Resource):
         self.post_parser = parser.copy()
         self.post_parser.replace_argument(user, type = str, required = True, location = 'json')
         self.put_parser = parser.copy()
-        super(DocAPI, self).__init__()
+        super(Doc, self).__init__()
 
     @marshal_with(doc_fields)
     def get(self, doc_id):
